@@ -10,7 +10,7 @@ namespace Gs.MediatR.Idempotency.Samples.Common;
 /// <param name="OrderId">Id de negócio (não serve como chave de idempotência da mensagem).</param>
 /// <param name="Amount">Valor do pagamento.</param>
 /// <param name="SimulateTransientFailure">Se true, a 1ª tentativa do handler falha (para demonstrar o retry).</param>
-public sealed record ProcessPaymentCommand(
+public sealed record ProcessPaymentRequest(
     string MessageId,
     Guid OrderId,
     decimal Amount,

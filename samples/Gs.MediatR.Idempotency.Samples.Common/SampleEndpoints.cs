@@ -16,7 +16,7 @@ public static class SampleServiceCollectionExtensions
     {
         services.AddMediatR(cfg =>
         {
-            cfg.RegisterServicesFromAssembly(typeof(ProcessPaymentCommand).Assembly);
+            cfg.RegisterServicesFromAssembly(typeof(ProcessPaymentRequest).Assembly);
 
             // A ordem de registro = ordem de execução. Aqui só há este behavior; num projeto real
             // (logging, validação, transação...) registre a idempotência DEPOIS da transação.

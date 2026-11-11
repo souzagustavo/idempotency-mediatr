@@ -1,62 +1,100 @@
 # Gs.MediatR.Idempotency
 
-Idempotência para consumidores de mensageria usando **MediatR Pipeline Behavior** (padrão *Idempotent Consumer*).
-O consumidor do broker despacha um command MediatR; o `IdempotencyBehavior` impede que a mesma mensagem execute o handler duas vezes.
+Implementando o padrão de idempotência para `Requests` usando **MediatR Pipeline Behavior**.
+
+## Caso de Uso
+
+Um consumidor de broker de mensagens despacha um request usando MediatR, o `IdempotencyBehavior` é a camada que garante que uma mesma solicitação do mesmo request execute o handler duas vezes ou mais
 
 ```
-Broker ──> Consumer ──Send(command)──> [IdempotencyBehavior] ──> Handler
+Broker ──> Consumer/Subscriber ──Send(command)──> [IdempotencyBehavior] ──> Handler
                                               │
-                                              └── IRequestRepository (MongoDB | PostgreSQL)
+                                              └── IRequestRepository (MongoDB | ...)
 ```
+
+O uso é recomendado para **requets** (sem retorno) tipicos de processamentos inicializados pelo consumo de mensagens.
 
 ## Estrutura
 
 ```
 src/
-  Gs.MediatR.Idempotency.Abstraction   IIdempotentRequest, IRequestRepository, IdempotencyBehavior, opções, DI
-  Gs.MediatR.Idempotency.MongoDb       MongoRequestRepository + índice TTL         → .UseMongoDb()
-  Gs.MediatR.Idempotency.Postgres      PostgresRequestRepository + DDL + cleanup   → .UsePostgres()
+  Gs.MediatR.Idempotency.Abstraction   Abstrações para implementação de idempotência para demais estruturas de persistência
+  Gs.MediatR.Idempotency.MongoDb       Implementação usando MongoDb → .UseMongoDb()  
 samples/
-  Gs.MediatR.Idempotency.AppHost            Aspire: sobe MongoDB e PostgreSQL (containers) e os dois samples
-  Gs.MediatR.Idempotency.ServiceDefaults    OpenTelemetry + health checks
-  Gs.MediatR.Idempotency.Samples.Common     command, handler, "broker" em memória, consumidor, endpoints
-  Gs.MediatR.Idempotency.Samples.MongoDb    Program.cs com Mongo   (modo Lazy)
-  Gs.MediatR.Idempotency.Samples.Postgres   Program.cs com Postgres (modo Eager)
+  Gs.MediatR.Idempotency.AppHost            
+  Gs.MediatR.Idempotency.ServiceDefaults    
+  Gs.MediatR.Idempotency.Samples.Common     Request, handler, "broker" em memória, consumidor, endpoints
+  Gs.MediatR.Idempotency.Samples.MongoDb    Exemplo  de uso com MongoDB 
 ```
 
 ## Como usar
 
+### Configurando Requests
+
+O request precisa implementar a interface IIdempotentRequest, definindo a propriedade IdempotencyKey como chave única para identificar a mensagem.
+
+No exemplo abaixo, a chave é o MessageId. 
+
 ```csharp
-// 1) O command implementa IIdempotentRequest
-public sealed record ProcessPaymentCommand(string MessageId, Guid OrderId, decimal Amount)
+// 
+public sealed record ProcessPaymentRequest(string MessageId, Guid OrderId, decimal Amount)
     : IRequest, IIdempotentRequest
 {
-    string IIdempotentRequest.IdempotencyKey => MessageId;   // id gerado pelo PRODUTOR
+    string IIdempotentRequest.IdempotencyKey => MessageId; 
 }
+```
 
-// 2) Registro
+### Registro do Behavior
+
+```csharp
 services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining<Program>();
-    cfg.AddIdempotencyBehavior();                // registre DEPOIS do behavior de transação, se houver
+    cfg.AddIdempotencyBehavior(); 
 });
-
-services.AddIdempotency(o => o.Mode = IdempotencyMode.Lazy)
-        .UseMongoDb();                           // ou .UsePostgres()
 ```
 
-## Modos
+### Configurando Estratégia de Persistência
 
-| | **Lazy** (padrão do artigo) | **Eager** |
-|---|---|---|
-| Fluxo | já concluído? → handler → grava | reserva atômica → handler → grava (falhou: libera) |
-| Falha do handler | nada gravado; reentrega reprocessa | reserva liberada; reentrega reprocessa |
-| Entregas simultâneas | **ambas podem executar o handler** | a 2ª recebe `RequestInProgressException` (NACK → reentrega depois) |
-| Chamadas ao banco | 2 | 2 (3 se houver falha) |
+#### Usando MongoDB
 
-Registros expiram: concluídos após `Retention` (padrão 7 dias — deve exceder a janela de reentrega do broker);
-reservas após `ProcessingLease` (padrão 5 min — recupera reservas de processos que caíram).
-MongoDB usa índice TTL; PostgreSQL usa um `BackgroundService` de limpeza.
+Registre o uso do MongoDB como repositório de idempotência. O `IMongoClient` precisa estar registrado no container.
+
+```csharp
+
+builder.Services
+    .AddMediatRIdempotency(options => builder.Configuration.GetSection("IdempotencyMediatR").Bind(options))
+    .UseMongoDb(options => options.DatabaseName = "your-database");
+
+```
+
+### Lock Distribuído
+
+O Pipeline Behavior precisa de um lock distribuído para impedir que duas ou mais instâncias do mesmo request executem o handler ao mesmo tempo.
+
+Sendo assim é necessário registrar um `IDistributedLockProvider`
+
+#### Usando via MongoDB
+
+Caso você esteja usando MongoDB e não possui nenhum um provedor de Lock configurado, instale o pacote `DistributedLock.MongoDB` e registre o provider.
+
+```
+dotnet add package DistributedLock.MongoDB
+```
+
+```csharp
+builder.Services.AddScoped<IDistributedLockProvider>(sp =>
+{
+    var db = sp.GetRequiredService<IMongoDatabase>();
+    return new MongoDistributedSynchronizationProvider(db);
+});
+```
+
+#### Demais Provedores
+
+É possivel usar qualquer provedor de lock que seja compativel com `IDistributedLockProvider`.
+
+Consulte as opções em [madelson/DistributedLock: A .NET library for distributed synchronization](https://github.com/madelson/DistributedLock)
 
 ## Executar os samples
 

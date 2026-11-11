@@ -7,7 +7,7 @@ namespace Gs.MediatR.Idempotency.Samples.Common;
 
 /// <summary>
 /// Consumidor do broker. É só um ADAPTADOR: converte a mensagem em command e despacha via MediatR.
-/// Toda a idempotência acontece no pipeline (IdempotencyBehavior), não aqui.
+/// Toda a idempotência acontece no pipeline (IdempotencyBehavior)
 /// </summary>
 public sealed class PaymentConsumer(
     InMemoryBroker broker,
@@ -51,7 +51,7 @@ public sealed class PaymentConsumer(
             var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
             await sender.Send(
-                new ProcessPaymentCommand(message.MessageId, message.OrderId, message.Amount, message.SimulateTransientFailure),
+                new ProcessPaymentRequest(message.MessageId, message.OrderId, message.Amount, message.SimulateTransientFailure),
                 ct);
 
             // Chegou aqui sem exceção → ACK. Inclui duplicatas: o behavior as ignora com sucesso,
