@@ -7,6 +7,7 @@
     <Description>Abstrações e IPipelineBehavior para idempotência de requests/commands MediatR (consumidores de mensageria).</Description>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="DistributedLock.Core" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />

@@ -8,13 +8,11 @@
   <Folder Name="/src/">
     <Project Path="src/Gs.MediatR.Idempotency.Abstraction/Gs.MediatR.Idempotency.Abstraction.csproj" />
     <Project Path="src/Gs.MediatR.Idempotency.MongoDb/Gs.MediatR.Idempotency.MongoDb.csproj" />
-    <Project Path="src/Gs.MediatR.Idempotency.Postgres/Gs.MediatR.Idempotency.Postgres.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Gs.MediatR.Idempotency.AppHost/Gs.MediatR.Idempotency.AppHost.csproj" />
     <Project Path="samples/Gs.MediatR.Idempotency.Samples.Common/Gs.MediatR.Idempotency.Samples.Common.csproj" />
     <Project Path="samples/Gs.MediatR.Idempotency.Samples.MongoDb/Gs.MediatR.Idempotency.Samples.MongoDb.csproj" />
-    <Project Path="samples/Gs.MediatR.Idempotency.Samples.Postgres/Gs.MediatR.Idempotency.Samples.Postgres.csproj" />
     <Project Path="samples/Gs.MediatR.Idempotency.ServiceDefaults/Gs.MediatR.Idempotency.ServiceDefaults.csproj" />
   </Folder>
 </Solution>

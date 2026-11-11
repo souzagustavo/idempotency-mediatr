@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -9,6 +9,9 @@
     <ProjectReference Include="..\Gs.MediatR.Idempotency.ServiceDefaults\Gs.MediatR.Idempotency.ServiceDefaults.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.MongoDB.Driver" />
+    <PackageReference Include="Aspire.MongoDB.Driver" />	
+	<PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+	<PackageReference Include="Scalar.AspNetCore" />
+	<PackageReference Include="DistributedLock.MongoDB" />
   </ItemGroup>
 </Project>

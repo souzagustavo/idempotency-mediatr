@@ -1,3 +1,4 @@
+using Medallion.Threading;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,20 +24,23 @@ public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior
     where TRequest : notnull, IIdempotentRequest
 {
     private readonly IRequestRepository _repository;
-    private readonly IdempotencyOptions _options;
+    private readonly IdempotencyMediatROptions _options;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
+    private readonly IDistributedLockProvider _distributedLockProvider;
 
     public IdempotencyBehavior(
         IRequestRepository repository,
-        IOptions<IdempotencyOptions> options,
+        IDistributedLockProvider providerLock,
+        IOptions<IdempotencyMediatROptions> options,
         ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
     {
         _repository = repository;
+        _distributedLockProvider = providerLock;
         _options = options.Value;
         _logger = logger;
     }
 
-    public Task<TResponse> Handle(
+    public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
@@ -47,72 +51,42 @@ public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior
                 $"{typeof(TRequest).Name}.{nameof(IIdempotentRequest.IdempotencyKey)} must not be null or empty.");
         }
 
-        // Escopo = tipo do request. Um request tem um único handler no MediatR, então equivale a "um consumidor".
-        var key = new RequestKey(typeof(TRequest).FullName ?? typeof(TRequest).Name, request.IdempotencyKey);
+        var key = new RequestCompositeKey(typeof(TRequest).FullName ?? typeof(TRequest).Name, request.IdempotencyKey);
 
-        return _options.Mode == IdempotencyMode.Eager
-            ? HandleEagerAsync(key, next, cancellationToken)
-            : HandleLazyAsync(key, next, cancellationToken);
-    }
+        _logger.LogInformation("Starting IdempotencyBehavior for request of key: {key}", key);
 
-    // ---------------------------------------------------------------------------------------------
-    // LAZY:  já concluído? → (sim) ignora | (não) executa handler → grava como concluído
-    // ---------------------------------------------------------------------------------------------
-    private async Task<TResponse> HandleLazyAsync(
-        RequestKey key,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
-    {
-        if (await _repository.IsCompletedAsync(key, ct).ConfigureAwait(false))
-        {
-            _logger.LogInformation("Duplicate request {RequestKey} ignored (already completed).", key);
-            return default!;
-        }
+        var @lock = _distributedLockProvider.CreateLock(key.ToString());
 
-        // Se o handler lançar exceção, nada foi gravado e a reentrega do broker poderá reprocessar.
-        var response = await next().ConfigureAwait(false);
+        _logger.LogInformation("Try acquire lock for request of key: {key}", key);
 
-        await _repository.MarkCompletedAsync(key, _options.Retention, ct).ConfigureAwait(false);
-        return response;
-    }
+        await using var handler = await @lock.TryAcquireAsync(timeout: _options.GetLockTimeOut(), cancellationToken: cancellationToken);
 
-    // ---------------------------------------------------------------------------------------------
-    // EAGER: reserva atômica → executa handler → grava como concluído | (falha) libera a reserva
-    // ---------------------------------------------------------------------------------------------
-    private async Task<TResponse> HandleEagerAsync(
-        RequestKey key,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
-    {
-        var reservation = await _repository.TryReserveAsync(key, _options.ProcessingLease, ct).ConfigureAwait(false);
+        if (handler is null)        
+            throw new InvalidOperationException(
+                $"Could not acquire distributed lock for request {key}. " +
+                $"The lock timeout is {_options.LockTimeOutInSeconds} seconds.");
 
-        switch (reservation)
-        {
-            case ReservationResult.AlreadyCompleted:
-                _logger.LogInformation("Duplicate request {RequestKey} ignored (already completed).", key);
-                return default!;
-
-            case ReservationResult.InProgress:
-                _logger.LogWarning("Request {RequestKey} is being processed elsewhere; signalling retry.", key);
-                throw new RequestInProgressException(key);
-        }
+        _logger.LogInformation("Lock acquired for request of key: {key}", key);
 
         TResponse response;
+
         try
         {
-            response = await next().ConfigureAwait(false);
+            if (await _repository.ExistsAsync(key, cancellationToken).ConfigureAwait(false))
+            {
+                _logger.LogInformation("Duplicate request of key: {key} ignored (already completed).", key);
+                return default!; // adicionar sucesso
+            }
+            
+            response = await next(cancellationToken).ConfigureAwait(false);
+
+            await _repository.AddAsync(key, _options.GetRetentionTime(), cancellationToken).ConfigureAwait(false);
         }
-        catch
+        finally
         {
-            // Handler falhou: libera a reserva para que a reentrega reprocesse.
-            // CancellationToken.None: queremos liberar mesmo que o token original tenha sido cancelado.
-            await _repository.ReleaseAsync(key, CancellationToken.None).ConfigureAwait(false);
-            throw;
+            await handler.DisposeAsync().ConfigureAwait(false);
         }
 
-        // Fora do try/catch de propósito: se gravar a conclusão falhar NÃO devemos liberar a reserva
-        // (o handler já produziu efeitos). O lease expira sozinho e, até lá, reentregas recebem InProgress.
-        await _repository.MarkCompletedAsync(key, _options.Retention, ct).ConfigureAwait(false);
         return response;
     }
 }

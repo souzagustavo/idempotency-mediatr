@@ -6,11 +6,11 @@ namespace Gs.MediatR.Idempotency;
 /// </summary>
 public sealed class RequestInProgressException : Exception
 {
-    public RequestInProgressException(RequestKey key)
+    public RequestInProgressException(RequestCompositeKey key)
         : base($"Request '{key}' is already being processed by another consumer.")
     {
         Key = key;
     }
 
-    public RequestKey Key { get; }
+    public RequestCompositeKey Key { get; }
 }

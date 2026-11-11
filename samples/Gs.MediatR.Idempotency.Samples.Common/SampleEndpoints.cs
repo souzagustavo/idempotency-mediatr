@@ -35,10 +35,9 @@ public static class SampleEndpoints
 {
     public static IEndpointRouteBuilder MapSampleEndpoints(this IEndpointRouteBuilder app, string providerName)
     {
-        app.MapGet("/", (IOptions<IdempotencyOptions> options) => Results.Ok(new
+        app.MapGet("/", (IOptions<IdempotencyMediatROptions> options) => Results.Ok(new
         {
             provider = providerName,
-            mode = options.Value.Mode.ToString(),
             howToTest = new[]
             {
                 "POST /payments                        → 1 mensagem entregue 2x (duplicata 500ms depois)",

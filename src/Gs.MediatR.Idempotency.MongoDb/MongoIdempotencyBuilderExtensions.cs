@@ -12,25 +12,24 @@ public static class MongoIdempotencyBuilderExtensions
     /// </summary>
     /// <remarks>
     /// Requer um <c>IMongoClient</c> no container (ex.: Aspire <c>AddMongoDBClient</c>) OU
-    /// <see cref="MongoIdempotencyOptions.ConnectionString"/>.
+    /// <see cref="MongoDbIdempotencyOptions.ConnectionString"/>.
     /// </remarks>
     public static IdempotencyBuilder UseMongoDb(
         this IdempotencyBuilder builder,
-        Action<MongoIdempotencyOptions>? configure = null)
+        Action<MongoDbIdempotencyOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
         var services = builder.Services;
 
-        var options = services.AddOptions<MongoIdempotencyOptions>();
+        var options = services.AddOptions<MongoDbIdempotencyOptions>();
         if (configure is not null)
         {
             options.Configure(configure);
         }
 
-        // TryAdd: se o IMongoClient já foi registrado (Aspire), este fallback é ignorado.
         services.TryAddSingleton<IMongoClient>(sp =>
         {
-            var o = sp.GetRequiredService<IOptions<MongoIdempotencyOptions>>().Value;
+            var o = sp.GetRequiredService<IOptions<MongoDbIdempotencyOptions>>().Value;
             if (string.IsNullOrWhiteSpace(o.ConnectionString))
             {
                 throw new InvalidOperationException(
@@ -41,8 +40,8 @@ public static class MongoIdempotencyBuilderExtensions
             return new MongoClient(o.ConnectionString);
         });
 
-        services.TryAddSingleton<IRequestRepository, MongoRequestRepository>();
-        services.AddHostedService<MongoIndexInitializer>();
+        services.TryAddSingleton<IRequestRepository, MongoDbRequestRepository>();
+        services.AddHostedService<MongoDbIdempotencyIndexInitializer>();
 
         return builder;
     }

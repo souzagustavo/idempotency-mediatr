@@ -10,11 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
-    <PackageReference Include="Aspire.Hosting.MongoDB" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.MongoDB" />    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Gs.MediatR.Idempotency.Samples.MongoDb\Gs.MediatR.Idempotency.Samples.MongoDb.csproj" />
-    <ProjectReference Include="..\Gs.MediatR.Idempotency.Samples.Postgres\Gs.MediatR.Idempotency.Samples.Postgres.csproj" />
   </ItemGroup>
 </Project>

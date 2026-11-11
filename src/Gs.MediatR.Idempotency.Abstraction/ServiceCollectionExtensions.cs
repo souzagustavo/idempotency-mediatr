@@ -1,6 +1,4 @@
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Gs.MediatR.Idempotency;
 
@@ -10,23 +8,21 @@ public static class IdempotencyServiceCollectionExtensions
     /// Registra as opções de idempotência. Em seguida escolha um provider:
     /// <c>.UseMongoDb(...)</c> ou <c>.UsePostgres(...)</c>.
     /// </summary>
-    public static IdempotencyBuilder AddIdempotency(
+    public static IdempotencyBuilder AddMediatRIdempotency(
         this IServiceCollection services,
-        Action<IdempotencyOptions>? configure = null)
+        Action<IdempotencyMediatROptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        var options = services.AddOptions<IdempotencyOptions>();
+        var options = services.AddOptions<IdempotencyMediatROptions>();
         if (configure is not null)
         {
             options.Configure(configure);
         }
 
         options.Validate(
-            o => o.Retention > TimeSpan.Zero && o.ProcessingLease > TimeSpan.Zero,
-            "Idempotency: Retention and ProcessingLease must be greater than zero.");
-
-        services.TryAddSingleton(TimeProvider.System);
+            o => o.RetentionInDays > 0 && o.LockTimeOutInSeconds > 0,
+            "Idempotency: RetentionInDays and LockTimeOutInSeconds must be greater than zero.");
 
         return new IdempotencyBuilder(services);
     }
