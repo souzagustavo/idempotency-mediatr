@@ -1,0 +1,20 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.0.0">
+  <!--
+    A versão do SDK acima precisa ser igual à versão dos pacotes Aspire.* (ver AspireVersion em Directory.Packages.props).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <UserSecretsId>7b6f3f0e-4d52-4a1c-9d1e-5a3c2b8e1f04</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
+    <PackageReference Include="Aspire.Hosting.MongoDB" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Gs.MediatR.Idempotency.Samples.MongoDb\Gs.MediatR.Idempotency.Samples.MongoDb.csproj" />
+    <ProjectReference Include="..\Gs.MediatR.Idempotency.Samples.Postgres\Gs.MediatR.Idempotency.Samples.Postgres.csproj" />
+  </ItemGroup>
+</Project>

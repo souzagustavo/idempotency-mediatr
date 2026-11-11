@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <RootNamespace>Gs.MediatR.Idempotency.Postgres</RootNamespace>
+    <PackageId>Gs.MediatR.Idempotency.Postgres</PackageId>
+    <Version>0.1.0</Version>
+    <Description>Repositório PostgreSQL (Npgsql) para Gs.MediatR.Idempotency.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Gs.MediatR.Idempotency.Abstraction\Gs.MediatR.Idempotency.Abstraction.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+</Project>

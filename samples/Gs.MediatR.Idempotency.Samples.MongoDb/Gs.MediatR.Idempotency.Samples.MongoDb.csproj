@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Gs.MediatR.Idempotency.MongoDb\Gs.MediatR.Idempotency.MongoDb.csproj" />
+    <ProjectReference Include="..\Gs.MediatR.Idempotency.Samples.Common\Gs.MediatR.Idempotency.Samples.Common.csproj" />
+    <ProjectReference Include="..\Gs.MediatR.Idempotency.ServiceDefaults\Gs.MediatR.Idempotency.ServiceDefaults.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.MongoDB.Driver" />
+  </ItemGroup>
+</Project>

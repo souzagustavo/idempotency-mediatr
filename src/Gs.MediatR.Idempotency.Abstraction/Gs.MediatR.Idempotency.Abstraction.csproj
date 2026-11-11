@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <RootNamespace>Gs.MediatR.Idempotency</RootNamespace>
+    <PackageId>Gs.MediatR.Idempotency.Abstraction</PackageId>
+    <Version>0.1.0</Version>
+    <Description>Abstrações e IPipelineBehavior para idempotência de requests/commands MediatR (consumidores de mensageria).</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+</Project>
